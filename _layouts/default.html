@@ -3,6 +3,19 @@
   <head>
     <title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.name }} – {{ site.description }}</title>
 
+
+	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+	<script type="text/x-mathjax-config"> 
+    		MathJax.Hub.Config({ 
+    		tex2jax: {
+      		inlineMath: [ ['$$','$$'],['$','$'], ["\\(","\\)"] ],
+      		processEscapes: true
+    		},
+        	"HTML-CSS": { scale: 85, linebreaks: { automatic: true } }, 
+        	SVG: { linebreaks: { automatic:true } }, 
+        	displayAlign: "center" });
+	</script>
+
     {% include meta.html %}
 
     <!--[if lt IE 9]>
@@ -28,7 +41,7 @@
 
           <nav>
             <a href="{{ site.baseurl }}/">Blog</a>
-            <a href="{{ site.baseurl }}/about">About</a>
+	    <a href="{{ site.baseurl }}/about">About</a>
           </nav>
         </header>
       </div>
@@ -49,3 +62,5 @@
     {% include analytics.html %}
   </body>
 </html>
+
+

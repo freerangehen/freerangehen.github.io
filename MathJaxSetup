@@ -1,0 +1,20 @@
+for setting up equations, follow:
+
+http://stackoverflow.com/questions/10987992/using-mathjax-with-jekyll
+
+at a console:
+
+gem install kramdown
+
+add in _config.yml:
+markdown: kramdown
+
+add the line:
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+ 
+after <title> line in your _layouts/default.html
+
+to changel font size, change style.css in root directory
+
+to change equation size, change _layout/default.html Mathjax setup script 

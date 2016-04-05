@@ -1,0 +1,128 @@
+---
+layout: post
+title: Deep Learning with LSTM
+---
+
+## Computational Neural Networks 
+Deep learning is the use of multilayer architectures (mostly Neural Networks) for machine learning tasks. The term originated from Deep believe networks, invented in Prof. Jeffrey Hinton's group, consists of stacked layers of Restricted Boltzmann Machines with directional information flow similar to Sigmoid Believe Networks.
+
+A typical Neural Network architectures consists of Neurons computing the weighted sum of it's inputs with the weighted sum passe onto a "squashing" non-linearity such as the hyperbolic tangent function:
+
+$$ y_{[out_i]} = tanh\left[ \sum_{\text{neuron inputs }x_k } \left(w_{ik} x_k\right) + bias_i  \right]$$ 
+
+The squashing non-linearity is what makes the generalisation property of neural networks possible. For the hyperbolic tangent function, we can say that it groups it's input into three categories, for large inputs, no matter how large, the tanh always evaluates to 1. Whereas for negative quantities, no matter how negative, the tanh function evaluates to -1. Outputs computed from input values near zero scales approximately linearly with the input. This means a large number of input values are mapped to the same output value. And if the neuron is trained to "group" all meaningful inputs to the same output, it possesses generalisation properties. The weights of each neuron adjusts the "preferred pattern" of the neuron. With the notation $$y_{[out_i]}$$ denoting the $i^{th}$ output neuron with it's own weights $$w_{i1}, w_{i2},...$$ - the entire layer of neurons can be specified by the parameters $$w_{ik}$$ dictating how we scale the $$k^{th}$$ input for contributing to the $$i^{th}$$ output. Suppose a neuron is trained to detect a large input at $$x_1$$ and a smaller input at $$x_2$$, the corresponding weight $$w_{i1}$$ will be large to amplify the effect of $$x_1$$ whereas the weight $$w_{i2}$$ will be small (or negative) to __inhibit__ the $$x_2$$ input. The "preferred input pattern" for a neuron to fire is termed __receptive field__ in neural science. In computing, the receptive field of an artificial neuron can be inferrred by visualising the weights of the trained neuron, often giving us a clue on what pattern this neuron is trained to detect. In the field of machine pattern recognition, raw data is often processed to extract useful "features" before a classifier. In most cases, the selection of features determines the performance of the system. The beauty of deep network architectures is the multilayer cascaded network is trained to extract useful, hierahical features of the input data that improves classification accuracy of later layers. This is learnt with the data through the optimisation process without the data scientist having an extensive understanding of the data to decide on the best set of features used. Ofcourse, a thorough understanding of the data and task at hand would too help to train a better deep network (e.g. localised receptive fields in CovNets for image recognition). 
+
+Multilayer Neural Networks are constructed by cascading layers of networks with the output of one layer feeding into the input of the next layer. It is often useful to see the output of a NN as a probability. For this, the softmax function is applied across the output layer:
+
+$$ P(\text{neuron}_i \text{ firing}) = \frac{e^{y_i}}{\sum_{i}e^{y_i}} $$
+
+thus we take the exponential of each of the neuron outputs and compute the sum of all these exponentials and use that as a normalisation constant such that all probabilities adds up to unity. 
+
+So we can see the Neural Network as being able to detect input patterns and generalise to patterns not "seen" before by the network. This __feedforward__ network takes the input layer and performs nonlinear transformation to produce the output. Recurrent Networks are Neural Networks that computes it's outputs not just with the network input but also with the previous network output. This memorising capability allows recurrent networks to handle many interesting tasks including music generation as I'll describe here. Simple recurrent networks computes outputs according to:
+  
+$$  y(t)_i = tanh \left[ \sum_{\text{neuron inputs }x_k } \left(w^{in}_{ik} x(t)_k \right) + \sum_{\text{neuron outputs }y_k(t-1) } \left(w^{out}_{ik} y_k(t-1) \right) + bias_i  \right]  $$
+
+Note for each time step we use the same weights and bias scaling. 
+
+So this is the architecture for Neural Networks. The hard bit is to configure the network with appropriate weights for the task at hand. Often we would like the network to produce the desired output given some inputs examples (training set). Or in probability terms we would like to maximise the probability of obtaining the desired output pattern. This can be formulated as a __cross entropy__ cost function between the desired output pattern (again normalised as a probability vector $$\underline{P} = {P_1, P_2, P_3,...}$$:
+
+$$ L = -\sum_{j\in \text{o/p index}} P_jlog\frac{e^{y_j}}{\sum_i e^{y_i}} $$
+
+To minimise the cross-entropy loss we differentiate the loss function w.r.t the weights of the network and update weights at each training iteration according to:
+
+$$ w_{ij} \vert_{new} = w_{ij} \vert_{old} + \text{ update rate } \frac{\partial L}{\partial w_{ij}} $$
+
+
+
+One cool application of deep recurrent neural networks is music generation. Since I hardly know how to play any instruments, I figure it would be cool to train a NN to generate some music, much like how we hum along making up tunes in the office. 
+
+Using column vectors for the layer variables and weight matrixes while denoting element-wise multiplcation by $$\odot$$, the forward pass of the three layer LSTM is computed by:
+
+$$\underline{i}_t^j = g_i\left[ \underline{I}_t^j \right]
+=g_i\left[ \boldsymbol{W}_{xi}^j \underline{x}_t +
+\boldsymbol{W}_{xj}^j \underline{h}_t^{j-1} + \boldsymbol{W}_{hi}^j \underline{h}_{t-1}^j +
+\boldsymbol{W}_{ci}^j \underline{c}_{t-1}^j + \underline{b}_i^j
+\right]$$ for $$j=1,2,3$$
+
+
+$$\underline{f}_t^j = g_f\left[ \underline{F}_t^j \right]
+=g_f\left[ \boldsymbol{W}_{xf}^j \underline{x}_t +
+\boldsymbol{W}_{fj}^j \underline{h}_t^{j-1} + \boldsymbol{W}_{hf}^j \underline{h}_{t-1}^j +
+\boldsymbol{W}_{cf}^j \underline{c}_{t-1}^j + \underline{b}_f^j
+\right]$$ for $$j=1,2,3$$
+
+$$ \underline{c}_t^j = \underline{f}_t^j \odot \underline{c}_{t-1}^j + 
+\underline{i}_t^j \odot tanh\left[ \underline{C}_t^j \right]
+\text{, }\underline{C}_t^j = \boldsymbol{W}_{xc}^j \underline{x}_t +
+\boldsymbol{W}_{cj}^j \underline{h}_t^{j-1} + \boldsymbol{W}_{hc}^j \underline{h}_{t-1}^j 
+ + \underline{b}_c^j $$ for $$j=1,2,3$$ 
+
+$$\underline{o}_t^j = g_o\left[ \underline{O}_t^j \right]
+=g_o\left[ \boldsymbol{W}_{xo}^j \underline{x}_t +
+\boldsymbol{W}_{oj}^j \underline{h}_t^{j-1} + \boldsymbol{W}_{ho}^j \underline{h}_{t-1}^j +
+\boldsymbol{W}_{co}^j \underline{c}_{t}^j + \underline{b}_o^j
+\right]$$ for $$j=1,2,3$$
+
+$$ \underline{h}_t^j = \underline{o}_t^j \odot tanh\left[ \underline{c}_t^j \right] $$ for $$ j = 1,2,3$$
+
+The network output is computed by weighted sum of the output of all three layers:
+
+$$\underline{y}_t = g_y\left[ \underline{Y}_t \right] =
+g_y\left[ \boldsymbol{W}_{hy}^1 \underline{h}_t^1 +
+\boldsymbol{W}_{hy}^2 \underline{h}_t^2 + \boldsymbol{W}_{hy}^3 \underline{h}_t^3 + \underline{b}_y
+\right]$$
+
+The three layers are cascaded with output of one layer connected as input of the next layer. However, since the overall network output receives outputs from all three layers directly, the three layers can be thought of a cascade and parallel hybrid.
+
+
+blah, mention softmax here
+
+## Vanishing gradients in RNN 
+blah, talk about LSTM etc here, highlight how the gates help
+
+## Back propagation in time and space
+
+blah intro back prop
+
+blah pick up softmax as output error here, is it KL? of other loss?
+
+The backwards error equations are derived as:
+
+$$\delta \underline{h}_t^j = \left[ g_y'\left(\underline{Y}_t\right) \odot \delta \underline{y}_t \right]\boldsymbol{W}_{hy}^j +
+\left[ g_i'\left(\underline{I}_{t+1}^j\right) \odot \delta \underline{i}_{t+1}^j \right]\boldsymbol{W}_{hi}^j +
+\left[ g_f'\left(\underline{F}_{t+1}^j\right) \odot \delta \underline{f}_{t+1}^j \right]\boldsymbol{W}_{hf}^j +
+\left[ g_o'\left(\underline{O}_{t+1}^j\right) \odot \delta \underline{o}_{t+1}^j \right]\boldsymbol{W}_{ho}^j +
+\left[ g_i'\left(\underline{I}_{t}^{j+1}\right) \odot \delta \underline{i}_{t}^{j+1} \right]\boldsymbol{W}_{xj}^{j+1} +
+\left[ g_f'\left(\underline{F}_{t}^{j+1}\right) \odot \delta \underline{f}_{t}^{j+1} \right]\boldsymbol{W}_{fj}^{j+1} +
+\left[ g_o'\left(\underline{O}_{t}^{j+1}\right) \odot \delta \underline{o}_{t}^{j+1} \right]\boldsymbol{W}_{oj}^{j+1} +
+\left[ \delta \underline{c}_{t+1}^j \odot \underline{i}_{t+1}^j \odot tanh'\left( \underline{C}_{t+1}^j \right) \right]\boldsymbol{W}_{hc}^j +
+\left[ \delta \underline{c}_{t}^{j+1} \odot \underline{i}_{t}^{j+1} \odot tanh'\left( \underline{C}_{t}^{j+1} \right) \right]\boldsymbol{W}_{cj}^{j+1}$$ $$$$
+
+$$\delta \underline{C}_t^j = 
+\left[ \delta \underline{c}_{t}^{j} \odot \underline{i}_{t}^{j} \odot tanh'\left( \underline{C}_{t}^{j} \right) \right]
+$$, with 
+
+$$\delta \underline{c}_t^j = 
+\left[ g_i'\left(\underline{I}_{t+1}^j\right) \odot \delta \underline{i}_{t+1}^j \right]\boldsymbol{W}_{ci}^j +
+\left[ g_f'\left(\underline{F}_{t+1}^j\right) \odot \delta \underline{f}_{t+1}^j \right]\boldsymbol{W}_{cf}^j + \\
+\left[ g_o'\left(\underline{O}_{t+1}^j\right) \odot \delta \underline{o}_{t+1}^j \right]\boldsymbol{W}_{co}^j + 
+\delta \underline{c}_{t+1}^j \odot \underline{f}_{t+1}^j +
+\delta \underline{h}_t^j \odot \underline{o}_t^j \odot tanh'\left( \underline{c}_t^j \right)
+$$
+
+$$\delta \underline{O}_t^j =  \delta \underline{o}_t^j \odot g_o'\left( \underline{O}_t^j \right) $$, with $$\delta \underline{o}_t^j = \delta \underline{h}_t^j \odot tanh\left( \underline{c}_t^j \right)$$
+
+
+$$\delta \underline{F}_t^j = \delta \underline{f}_t^j \odot g_f'\left( \underline{F}_t^j \right) $$, with $$\delta \underline{f}_t^j = \delta \underline{c}_t^j \odot  \underline{c}_{t-1}^j$$
+
+$$\delta \underline{I}_t^j = \delta \underline{i}_t^j \odot g_i'\left( \underline{I}_t^j \right) $$, with $$\delta \underline{i}_t^j = \delta \underline{c}_t^j \odot tanh\left( \underline{C}_t^j \right)$$
+
+## Practical issues
+I implemented the three layer LSTM using the Python/Theano framework. Gradients were calculated using the equations above without relying on the symbolic differentiation of theano. The main reason is that symbolic differentation took too long to compile even with amazon GPU instances for my network. The manually derived error terms also relied on assumptions such as $$\underline{o}_t^j$$ independent of $$\underline{c}_t^j$$ while calculating $$\partial \underline{h}_t^j / \partial \underline{c}_t^j$$. Implementing these assumptions in Theano's symbolic differentiation requires experimenting with "constant settings" in the gradient routine. Implementing the equations myself also gave me some practice in coding up systems with reasonable complexity in Phython. An average of the gradient were used for each update (RMSprop). The network is initialised with all weights set to zero and a small gaussian noise to break the symmetry. All bias were set such that the network starts in the middle of all nonlinearities. E.g. for the logistic function, biases are initialised to $$0.5\div [\text{#neurons in layer}]$$ with a small gaussian noise whereas for tanh activated neurons, biases are initialised around zero with small amount of noise added. 
+
+Training was carried out on a 5yo i5 computer.    
+
+## References
+Jaegar's thesis
+Andrew Ng's course
+Alex Grave's thesis/paper on equation derivation

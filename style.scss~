@@ -126,8 +126,22 @@ strong, b { //strong emphasis
 
 img {
   max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
+
+IMG.displayed {
+    display: block;
+    margin-left: auto;
+    margin-right: auto 
+}
+
+.post-body img { 
+    display: block; 
+    margin-left: auto; 
+    margin-right: auto 
+}
 
 
 // Fixes images in popup boxes from Google Translate
