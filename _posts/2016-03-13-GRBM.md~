@@ -1,272 +1,291 @@
 ---
 layout: post
-title: GRBM
+title: Joint probability modelling
 ---
 
-## Modeling joint probabilities
+This post documents the inner workings of a statistical model (Restricted Boltzmann Machine) for modelling the joint probability of multiple random variables (R.V.s). In many real life scanarios, getting to grips with a statistical model can often give us an [upper hand](https://en.wikipedia.org/wiki/Card_counting). In some cases we are given some data and have to work out a statistical model for it. RBMs does exactly that for multiple R.V.s. The challenge is how do we configure an RBM, which behavior depends on its parameters, to best describe the statistics of the data. 
 
-Suppose you want to bet on the outcome of tossing a biased coin. To figure out the best amount to bet you rely on the respective probability (mostly estimated) of the coin turning out to have heads or tails on top as well as the reward scheme on the bet. Implicitely you're making decision based on a statistical model (the probabilities) of the coin toss. With a better model, you're more *likely* to win the bet. This is the cool thing about statistics - we can use models to describe random processes and make decisions based on quatitative facts rather than a blind guess. Intuition in some cases can help us along, however for more complicated situations having statistical tools could give us an [upper hand](https://en.wikipedia.org/wiki/Card_counting). With a model we can also re-create (or simulate) the statistics described. One of the simplest models is the Gaussian distribution for a single random variable. Statistical models usually comes as parameters, by changing the model parameters, we adapt the model to give a better fit of the random observed data. For the Gaussian distribution, two key parameters are the mean and variance. The mean describing the expected value of the random variable, that is being the best guess of the Gaussian random number. The `variance` describes how likely the actual Gaussian random number will deviate from this mean in practice. The larger the variance, the larger "spread" the samples will be away from the mean. Practically we can say that 99% of the time we'll have the Gaussian random number lying within the $$\pm 3\sigma$$ range. 
 
-So for simple random phenomena with one random variable we can use simple distributions such as the binomial or the Gaussian process for modeling. What if we have a more complicated scenario where there are several random variables? In this case we need to model the joint distribution of the variables to capture the inter-dependencies of the variables. An example of this is...
+### Restricted Boltzmann Machines
 
-One commonly used model is known as a Markov random field. 
+RBM is a way of describing a joint probability of a number of random variables (two vectors $$\underline{v}$$, and $$\underline{h}$$, say), such that the probability of a particular case ($$\underline{v}=\underline{v}_0, \underline{h}=\underline{h}_0$$), written as $$P(\underline{v}=\underline{v}_0, \underline{h}=\underline{h}_0)$$ or simply $$P(\underline{v}_0,\underline{h}_0)$$, is proportional to the exponential of the weighted sum of these variable instances: 
 
-RBM is a way of describing a joint probability of a number of random variables (two vectors $$\vec{v}$$, and $$\vec{h}$$, say), such that probability of a particular case ($$\vec{v}=\vec{v}_0, \vec{h}=\vec{h}_0$$), written as $$P(\vec{v}=\vec{v}_0, \vec{h}=\vec{h}_0)$$ or simply $$P(\vec{v}_0,\vec{h}_0)$$, is proportional to the exponential of the weighed sum of these variable instances: 
-
-$$P(\vec{v},\vec{h})=\frac{1}{Z}e^{-E(\vec{v},\vec{h})}$$
+>$$P(\underline{v},\underline{h})=\frac{1}{Z}e^{-E(\underline{v},\underline{h})}$$
 
 with
 
-$$E=\sum_i\sum_j\omega_{ij}h_iv_j+\sum_jb_jv_j+\sum_ic_ih_i$$
+>$$E=\sum_i\sum_j\omega_{ij}h_iv_j+\sum_jb_jv_j+\sum_ic_ih_i$$
 
-For to establish an RBM to model binary R.V.sThe weighted sum of the random variables $$(\vec{v},\vec{h})$$ is known as the energy function and the normalisation constant $$Z$$ ("partition function") is given by summing all the possibilities of $$(\vec{v},\vec{h})$$:
+The weighted sum of the random variables $$E(\underline{v},\underline{h})$$ is known as the energy function and the normalisation constant $$Z$$ (the "partition function") is given by summing all the possibilities of $$(\underline{v},\underline{h})$$:
 
-$$Z=\sum_{\vec{v},\vec{h} \in \Omega}e^{-E(\vec{v},\vec{h})}$$, with $$\Omega$$ being the sample space of all possible combinations of $$(\vec{v}, 
-\vec{h})$$. 
+$$Z=\sum_{\underline{v},\underline{h} \in \Omega}e^{-E(\underline{v},\underline{h})}$$, with $$\Omega$$ being the sample space of all possible combinations of $$(\underline{v}, 
+\underline{h})$$. 
 
-To compute $$Z$$, we thus have to evaluate $$e^{-E(\vec{v},\vec{h})}$$ for all possible values of $$(\vec{v},\vec{h})$$ and sum it. This summation becomes a multiple integral for continuous, real valued $$(\vec{v},\vec{h})\in \mathbf{R}^{N+M}$$. This is linked to the general theory of Markov random fields where you generate probabilities with a deterministic function of the R.V.s and normalise across all possibilities (the sample space) to turn it into a "probability density such that the individual probabilities are $$\leq1$$ and the total sum of all probabilities equal to 1. i.e. in form of $$P(\vec{x})=\frac{f(\vec{x})}{Z}$$. The overall probability of our R.V.s $$(\vec{v},\vec{h})$$ for the RBM, is thus given by:
+To compute $$Z$$, we thus have to evaluate $$e^{-E(\underline{v},\underline{h})}$$ for all possible values of $$(\underline{v},\underline{h})$$ and sum it. This summation becomes a multiple integral for continuous, real valued $$(\underline{v},\underline{h})\in \mathbf{R}^{N+M}$$. The definition of the partition function $$Z$$ as a sum over the sample space ensures that each probability term defined by the RBM is $$<1$$ and all probabilities sum up to unity (more general family of densities can be found [here](https://en.wikipedia.org/wiki/Markov_random_field). The overall probability of our R.V.s $$(\underline{v},\underline{h})$$ for the RBM, is thus given by:
 
-$$ P(\vec{v},\vec{h}) = \frac{1}{\sum_{(\vec{v},\vec{h} \in \Omega)}e^{-E(\vec{v},\vec{h})}} e^{-E(\vec{v},\vec{h})}  $$
+$$ P(\underline{v},\underline{h}) = \frac{1}{\sum_{(\underline{v},\underline{h} \in \Omega)}e^{-E(\underline{v},\underline{h})}} e^{-E(\underline{v},\underline{h})}  $$
 
-so to find the probability of a particular $$(\vec{v},\vec{h})$$ pair occuring, we simply stick the $$(\vec{v},\vec{h})$$ pair into the above formula. Of course the practical difficulty is the partition function require summation across the entire sample space. The structure of the RBM also implies that any hidden R.V. in $$\vec{h}=\{h_0, h_1, ..., h_{N-1}\}$$ and visible R.V.s in $$\vec{v}=\{v_0, v_1, ..., v_{M-1}\}$$ are independent from each other in the same group, only dependency is between the layers. i.e.
+so to find the probability of a particular $$(\underline{v},\underline{h})$$ pair occurring, we simply substitute the $$(\underline{v},\underline{h})$$ pair into the above formula. The practical difficulty is the evaluation of the partition function requiring summation across the entire sample space. The structure of the RBM (as exponential of a weighted sum) also implies that any hidden R.V. in $$\underline{h}=\{h_0, h_1, ..., h_{N-1}\}$$ and visible R.V.s in $$\underline{v}=\{v_0, v_1, ..., v_{M-1}\}$$ are independent from each other in the same group **when the other group is given**:
 
-$$ p(\vec{h}|\vec{v}) = p(h_0|\vec{v})p(h_1|\vec{v})...p(h_{N-1}|\vec{v}) = \prod_i p(h_i|\vec{v})$$ 
+$$ p(\underline{h}\vert \underline{v}) = p(h_0\vert \underline{v})p(h_1\vert \underline{v})...p(h_{N-1}\vert \underline{v}) = \prod_i p(h_i\vert \underline{v})$$ 
 
-$$ p(\vec{v}|\vec{h}) = p(v_0|\vec{h})p(v_1|\vec{h})...p(v_{M-1}|\vec{h}) = \prod_j p(v_j|\vec{h})$$
+$$ p(\underline{v}\vert \underline{h}) = p(v_0\vert \underline{h})p(v_1\vert \underline{h})...p(v_{M-1}\vert \underline{h}) = \prod_j p(v_j\vert \underline{h})$$
 
-
-effectively a feedforward non-recursive network topology. There is also the extended time-recursive versiont ermed "Temporal Restricted Boltzmann's Machine". 
-
-For this section, we treat all R.V.s in hidden, visible layers are discrete taking 1 or 0 as values. i.e. $$h_i \in \{0,1\}$$, and $$v_j \in \{0,1\}$$ with probability defined above. Turns out in the case of binary R.V.s, writing the probability as a normalised exponential of the energy function of the random variables can represent *any* distribution of $$(\vec{v},\vec{h})$$ binary vectors. This is by tuning the parameters of the distribution $$\{\omega_{ij},b_j,c_i\}$$. The process of learning the distribution of a dataset is thus tuning these parameters systematically such that the model approaches the statistics of the data. 
-
-In Neural networks we look at each individual neuron and characterise it with a firing probability given the stages of all other R.V.s often defined by a weighted sum of other R.V.s and a sigmoid function:
-
-*Prob(particular neuron fire) = sig(weighted sum of other neoron states)*
-
-In RBM we define the joint probability of all R.V.s in one go. If we extract the probability of each R.V. to be equal to unity 
-
-$$P(h_i=1|\text{other R.V.s fixed})$$
-
-, and 
-
-$$P(v_j=1|\text{other R.V.s fixed})$$
+This property of RBMs simplifies the sampling process. Effectively we use these conditional probabilities to generate the hidden R.V.s from given visible R.V.s and generate visible R.V.s from the previously generated hidden R.V.s:
 
 
-we can see the equivalent with Neural Networks. Consider the probability of a particular visible R.V. euqals to 1:
+![RBMgraph](/images/RBMgraph.png)
 
-$$P(v_k=1|\vec{v}_{\backslash k}, \vec{h})$$
+Here we illustrate a small fully connected RBM, larger RBMs are not necessarilly fully connected. 
 
-,with $$\vec{v}_{\backslash k}$$ representing all other visible R.V. apart from $$v_k$$
+For now we treat all R.V.s in both hidden, visible layers as discrete taking 1 or 0 as values. i.e. $$h_i \in \{0,1\}$$, and $$v_j \in \{0,1\}$$ with probability defined above. Turns out in the case of binary R.V.s, writing the probability as a normalised exponential of the energy function of the random variables can represent **any** distribution of $$(\underline{v},\underline{h})$$ binary vectors. This is by tuning the parameters of the distribution $$\{\omega_{ij},b_j,c_i\}$$. The process of learning the distribution of a data set is thus tuning these parameters systematically such that the model approaches the statistics of the data. 
 
-Following conditional probability rule 
+In neural networks we can look at each individual neuron and characterise it with a firing probability given the states of all other R.V.s. This can be defined as the sigmoid of the weighted sum of other R.V.s:
 
-$$P(A|B)P(B)=P(A,B)$$ 
+$$\text{Prob(particular neuron firing) = sigmoid(weighted sum of other neuron states)}$$
 
-we have:
+Previously we have looked at the RBM by defining the joint probability of all R.V.s in one equation. If we extract the probability of **each** R.V. to be equal to unity: 
 
-$$ P(v_k=1|\vec{v}_{\backslash k}, \vec{h}) = \frac{P(v_k=1,\vec{v}_{\backslash k}, \vec{h})}{P(\vec{v}_{\backslash k}, \vec{h})} = \frac{P(v_k=1,\vec{v}_{\backslash k}, \vec{h})}{P(v_k=1,\vec{v}_{\backslash k}, \vec{h}) + P(v_k=0,\vec{v}_{\backslash k}, \vec{h})}$$
+$$P(h_i=1\vert \text{other R.V.s fixed})$$, and $$P(v_j=1\vert \text{other R.V.s fixed})$$
 
-The last expression is derived from total probability theory. Recall that all probabilities are in the form of $$e^{-E(\vec{v},\vec{h})}/Z$$ so the troublesome term $$Z$$ actually cancels out in the fraction, leaving:
+we can see the equivalent with Neural Networks. Consider the probability of a particular visible R.V. equals to 1:
+
+$$P(v_k=1\vert \underline{v}_{\backslash k}, \underline{h})$$
+
+,with $$\underline{v}_{\backslash k}$$ representing all other visible R.V. apart from $$v_k$$
+
+Following conditional probability rule $$ P(A\vert B)P(B)=P(A,B) $$, we have:
+
+$$ P(v_k=1\vert \underline{v}_{\backslash k}, \underline{h}) = \frac{P(v_k=1,\underline{v}_{\backslash k}, \underline{h})}{P(\underline{v}_{\backslash k}, \underline{h})} = \frac{P(v_k=1,\underline{v}_{\backslash k}, \underline{h})}{P(v_k=1,\underline{v}_{\backslash k}, \underline{h}) + P(v_k=0,\underline{v}_{\backslash k}, \underline{h})}$$
+
+The last expression is derived from total probability theory. Recall that all probabilities are in the form of $$e^{-E(\underline{v},\underline{h})}/Z$$ so the troublesome term $$Z$$ actually cancels out in the fraction, leaving:
 
 $$\frac{e^ {-\sum_{i,j\neq k}[\omega_{ij}h_iv_j] -\sum_{j\neq k}b_jv_j -\sum_ic_ih_i -b_k(1) - \sum_i\omega_{ik}h_i(1) } }{e^ {-\sum_{i,j\neq k}[\omega_{ij}h_iv_j] -\sum_{j\neq k}b_jv_j -\sum_ic_ih_i -b_k(1) - \sum_i\omega_{ik}h_i(1) }  + e^ {-\sum_{i,j\neq k}[\omega_{ij}h_iv_j] -\sum_{j\neq k}b_jv_j -\sum_ic_ih_i -b_k(0) - \sum_i\omega_{ik}h_i(0) }}$$
 
-dividing by numberator, we have:
+dividing by the numerator, we have:
 
-$$ P(v_k=1|\vec{v}_{\backslash k},\vec{h}) = \frac{1}{1+e^{\sum_i \omega_{ik}h_i + b_k}} = sig(\sum_i \omega_{ik}h_i + b_k) $$
+>$$ P(v_k=1\vert \underline{v}_{\backslash k},\underline{h}) = \frac{1}{1+e^{\sum_i \omega_{ik}h_i + b_k}} = sig(\sum_i \omega_{ik}h_i + b_k) $$
 
 and similarly:
 
-$$ P(h_k=1|\vec{h}_{\backslash k},\vec{v}) = \frac{1}{1+e^{\sum_i \omega_{ki}v_i + c_k}} = sig(\sum_i \omega_{ki}v_i + c_k) $$
+>$$ P(h_k=1\vert \underline{h}_{\backslash k},\underline{v}) = \frac{1}{1+e^{\sum_i \omega_{ki}v_i + c_k}} = sig(\sum_i \omega_{ki}v_i + c_k) $$
 
-which is a sigmoid function of weighted sums of other weights! so the probability of a particular visible R.V. $$v_k$$ equals to one can be written as a sigmoid of weighted sums of all hidden R.V.s and a "bias" $$b_k$$. This is exactly like defining a neural network with the firing probability as the weighted sums of states in the hidden layer. We can go from a joint distribution $$P(\vec{v},\vec{h})$$ defining the RBM to the individual probabilities of each R.V. reminiscent of a NN definition because we have defined the probabilities as exponential functions. This goes very well with the sigmoid function, which is also based on exponentials.
+which is a sigmoid function of weighted sums of other weights! so the probability of a particular visible R.V. $$v_k$$ equals to one can be written as a sigmoid of weighted sums of all hidden R.V.s and a "bias" $$b_k$$. This is exactly like defining a neural network with the firing probability as the sigmoid of the weighted sum of states in the hidden layer. We can go from a joint distribution $$P(\underline{v},\underline{h})$$ defining the RBM to the individual probabilities of each R.V. reminiscent of a NN definition because the probabilities are defined as exponential functions. This allows us to simplify the probabilities with the sigmoid function, which is also based on exponentials. Despite the joint probability having the complicated partition function $$Z$$, the conditional probabilities are independent of $$Z$$. This allows us to sample from the joint probability using [Gibbs sampling](https://en.wikipedia.org/wiki/Gibbs_sampling), which we'll demonstrate in the code.
 
 
-## RBM unsupervised learning
+### RBM unsupervised learning
 
-looking at the RBM topology again, there are no intra-layer connections (conditinoal probabilities). For general unsupervised learning, we are given a bunch of sample data $$\vec{x}$$, with unknown distribution. The task of the learning process is to lear, or infer the distribution from the sampled data set. Often we have a model that can be used to fit the underlying distribution of the sampled data. To make our life easier, we have:
+Looking at the RBM topology again, there are no intra-layer connections (conditional probabilities). For general unsupervised learning, when we are given a set of example data $$\underline{x}^{(s)}$$, with unknown distribution. The task of the learning process is to model the distribution of the given data set. Often we have a model that can be used to fit the underlying distribution of the examples. To make our life easier, we have:
 
-1. A fixed graphical structure in the model, hopefully mirroring the inter-dependenceis of the data (if you know, or guess it) e.g. RBM structure assumed. By definining a structure, we can figure out a set of analytical/computational tools to handle these specific structures (dependent probabilities)
-2. some parameteres in your model so you can tune to tbest estimate the underlying distribution of the sampled data. e.g. foir RBM it's $$\vec{\theta}=\{\omega_{ij},b_j,c_i\}$$ in the energy function.7
+1. A fixed graphical structure in the model, hopefully mirroring the inter-dependencies of the data (if you know, or make an intuitive guess) e.g. RBM structure assumed. By defining a structure, one can figure out a set of analytical/computational tools to handle these specific structures (conditional probabilities)
+2. some parameters in the model so we can tune to best estimate the underlying distribution of the example data set. e.g. for RBM it's $$\underline{\theta}=\{\omega_{ij},b_j,c_i\}$$ in the energy function.
 
-so how we do this with the RBM? learning the statistics from the sampled data. Tuning the parameters $$\vec{\theta}=\{\omega_{ij},b_j,c_i\}$$ such that it best fits the underlying of the sampled data $$\vec{v}$$? The difficulty is that RBM have hidden variables $$\vec{h}$$, and you don't have data for this directly. Having these hidden R.V.s in the model are infact an advantage, giving RBM the ability to capture nonlinear dynamics of a system. The input samples are generated by an unknown process, it would be difficult to even fidn out how well the RBM approximates the samples' statistics. One simple way to look at it is we tune the RBM (essentially defines a joint probability of R.V.s) parameters such taht when we sample from the RBM joint distribution model, the probability of getting those samples back is maximum. Mathematically this is written as maximising the product ("and" relation) of probability of getting a particular example $$\vec{v}^{(s)}$$ given parameters $$\vec{\theta}$$:
+so how we do this with the RBM, learning the statistics from the sampled data? Tuning the parameters $$\underline{\theta}=\{\omega_{ij},b_j,c_i\}$$ such that it best fits the underlying distributino of the sampled data $$\underline{v}^{(s)}$$? The difficulty is that RBM have hidden variables $$\underline{h}$$, and data for this is not provided directly. Having these hidden R.V.s in the model are in fact an advantage, giving RBM the ability to capture inter-dependent (conditional) probabilities between the visible R.V.s. The input samples are generated by an unknown process, this makes it difficult to find out how well the RBM approximates the true underlying. One simple way to look at it is we tune the RBM (essentially defines a joint probability of R.V.s) parameters such that when we sample from the RBM joint distribution (i.e. **using the RBM as a generative model**), the probability of getting those samples back is maximum. Mathematically this is written as maximising the product ("and" relation) of probabilities of getting a particular example $$\underline{v}_i^{(s)}$$ given parameters $$\underline{\theta}$$:
 
-$$ L(\vec{\theta}|\vec{v}^{(s)}) = \prod_{i^{th}example} P(\vec{v}_i^{(s)}|\vec{\theta})$$
+$$ L(\underline{\theta}\vert \underline{v}^{(s)}) = \prod_{i^{th}example} P(\underline{v}_i^{(s)}\vert \underline{\theta})$$
 
-we label this quantity as 
+we label this quantity as $$L(\underline{\theta}\vert \underline{v}^{(s)})$$, to explicitly state that we want the parameters $$\underline{\theta}$$ that maximises the probability of getting the examples $$\underline{v}^{(s)}$$. The probability $$P(\underline{v}_i^{(s)}\vert \underline{\theta})$$ of getting the ith example vector $$\underline{v}_i^{(s)}$$ can also be written as a product of probabilities of individual elements in the ith example vector $$ \underline{v}_i^{(s)} = \{v_i^{(s)}(0), v_i^{(s)}(2), ... v_i^{(s)}(M-1)\} $$ 
 
-$$L(\vec{\theta}|\vec{v}^{(s)})$$ 
-
-to explicitely state that we want the parameters $$\vec{\theta}$$ that maximises the probability of getting the examples $$\vec{v}^{(s)}$$. The probability 
-
-$$P(\vec{v}_i^{(s)}|\vec{\theta})$$ 
-
-of getting the ith example vector $$\vec{v}_i^{(s)}$$ can also be written as a product of probabilities of individual elements in the ith example vector $$\vec{v}_i^{(s)}=\{v_i^{(s)}(0), v_i^{(s)}(2), ... v_i^{(s)}(M-1)\}$$ i.e.
-
-$$ P(\vec{v}_i^{(s)} | \vec{\theta}) = P(v_i^{(s)}(0)|\vec{\theta}) P(v_i^{(s)}(2)|\vec{\theta}) ... P(v_i^{(s)}(M-1)|\vec{\theta}) $$
+i.e. $$ P(\underline{v}_i^{(s)} \vert \underline{\theta}) = P(v_i^{(s)}(0)\vert \underline{\theta}) P(v_i^{(s)}(2) \vert \underline{\theta}) ... P(v_i^{(s)}(M-1) \vert \underline{\theta}) $$
 
 to write this as a sum of terms, we take the natural logarithm:
 
-$$ ln(L(\vec{\theta}|\vec{v}^{(s)})) = ln(\prod_{i^{th}example} P(\vec{v}_i^{(s)}|\vec{\theta})) = \sum_{i^{th}example}ln(P(\vec{v}_i^{(s)}|\vec{\theta})) $$
+$$ ln(L(\underline{\theta} \vert \underline{v}^{(s)})) = ln(\prod_{i^{th}example} P(\underline{v}_i^{(s)} \vert \underline{\theta})) = \sum_{i^{th}example}ln(P(\underline{v}_i^{(s)} \vert \underline{\theta})) $$
 
-This way to maximising the probability of getting the training inputs when we run our model is like minimising the "distance" between ourmodel $$P(\vec{v},\vec{h})$$, and the unknown input distribution $$q(\vec{v})$$, say, is known as the **maximum-likelihood estimation**. To maximise the probability of getting the training examples obviously will be problematic for small, non-representative example sets. 
+This way to maximising the probability of getting the training inputs when we run our model is like minimising the "distance" between our model $$P(\underline{v},\underline{h})$$, and the unknown input distribution $$q(\underline{v})$$, say, is known as the **maximum-likelihood estimation**. 
 
-One way of formally measureing the difference between the example distribution $$q(\vec{v})$$ and our model distribution $$P(\vec{v}, \vec{h})$$ (strictly speaking this should be written as $$P(\vec{v})=\sum_{\vec{h}}P(\vec{v},\vec{h})$$ but we include the hidden vectors as they're part of the RBM model) is the Kullback-Leibler divergence (KL-divergence):
+One way of formally measuring the difference between the example distribution $$q(\underline{v})$$ and our model distribution $$P(\underline{v}, \underline{h})$$ (strictly speaking this should be written as $$P(\underline{v})=\sum_{\underline{h}}P(\underline{v},\underline{h})$$ but we include the hidden vectors as they're part of the RBM model) is the Kullback-Leibler divergence (KL-divergence):
 
-$$ KL(q||p) = \sum_{x \in \Omega}q(\vec{x})ln\frac{q(\vec{x})}{p(\vec{x})} = \sum_{x \in \Omega}q(\vec{x})ln{q(\vec{x})} - \sum_{x \in \Omega}q(\vec{x})ln{p(\vec{x})}$$
+$$ KL(q||p) = \sum_{x \in \Omega}q(\underline{x})ln\frac{q(\underline{x})}{p(\underline{x})} = \sum_{x \in \Omega}q(\underline{x})ln{\left[q(\underline{x})\right]} - \sum_{x \in \Omega}q(\underline{x})ln{\left[p(\underline{x})\right]}$$
 
-The first germ is the example distribution entropy, which is fixed for a target distribution. The second term involves our model distribution $$P(\vec{x})$$, or $$P(\vec{v})=\sum_{\vec{h}}P(\vec{v},\vec{h})$$ in the RBM case. To minimise the KL-divergence between the example and model distributions we need to minimise the first term and maximise the second term as entropy functiosn in the form $$qln(p)$$ is always $$\geq 0$$. So in a way how good the model approximates the example data depends on the example distribution, as obviously some distribution are easier to model (zero entrypy, determinisitic!) and others with higher entropy are harder to fit. For our model, we need to maximise the term $$\sum_{\vec{s} \in \Omega}q(\vec{x})ln(p(\vec{x}))$$. This is impractical to evaluate so we maximise the probability of getting the examples instead. i.e. 
+The first term is the example distribution entropy, which is fixed for a target distribution. The second term involves our model distribution $$P(\underline{x})$$, or $$P(\underline{v})=\sum_{\underline{h}}P(\underline{v},\underline{h})$$ in the RBM case. To minimise the KL-divergence between the example and model distributions we need to minimise the first term and maximise the second term as entropy functions in the form $$qln(p)$$ is always $$\geq 0$$. So how good the model approximates the example data depends on the example distribution, as distributions with lower entropy are easier to model (as they are "less random") and others with higher entropy are harder to fit. For our model, we need to maximise the term $$\sum_{\underline{s} \in \Omega}q(\underline{x})ln(p(\underline{x}))$$. This is impractical to evaluate so we **maximise the probability of getting the examples** instead. i.e. 
 
-$$\sum_{k^{th} example}ln[P(\vec{v}_k^{(s)}|\vec{\theta})]$$
+$$\sum_{k^{th} example}ln[P(\underline{v}_k^{(s)} \vert \underline{\theta})]$$
 
-if our parameters $$\vec{\theta}={\omega_{ij},b_j,c_i}$$ maximises this then our modoel is "tuned" to the examples with "maximum-likelihood estimation" and achieved minimum KL-divergence between the example distribution and the model distribution. Now let's look at the probability of running the model and generating the example vectors in detail:
+if our parameters $$\underline{\theta} = \{ \omega_{ij},b_j,c_i \}$$ maximises this then our model is "tuned" to the examples with "maximum-likelihood estimation" and achieved minimum KL-divergence between the example distribution and the model distribution. Now let's look at the probability of running the model and generating the example vectors in detail:
 
-$$ln(P(\vec{v}^{(s)}|\vec{\theta}))  =  ln\left[\frac{\sum_{\vec{h}}e^{-E(\vec{v}^{(s)}, \vec{h})}}{Z}\right] = 
-ln\left[{\sum_{\vec{h}\in \Omega_h}e^{-E(\vec{v}^{(s)}, \vec{h})}}\right]
-- ln\left[{\sum_{\vec{v},\vec{h} \in \Omega}e^{-E(\vec{v}, \vec{h})}}\right] $$
+$$ln(P(\underline{v}^{(s)}\vert \underline{\theta}))  =  ln\left[\frac{\sum_{\underline{h}}e^{-E(\underline{v}^{(s)}, \underline{h})}}{Z}\right] = 
+ln\left[{\sum_{\underline{h}\in \Omega_h}e^{-E(\underline{v}^{(s)}, \underline{h})}}\right]
+- ln\left[{\sum_{\underline{v},\underline{h} \in \Omega}e^{-E(\underline{v}, \underline{h})}}\right] $$
 
-We obtained the above expressions by substituting the example vector $$\vec{v}_k^{(s)}$$ in to the probability expression $$P(\vec{v},\vec{h})=\frac{e^{-E(\vec{v},\vec{h})}}{Z}$$ and summing over all outcomes of $$\vec{h}$$, at the same time noting the partition function $$Z$$ is the exponential term summed over all possible values of $$(\vec{v},\vec{h})\in \Omega$$. Both summations involves a lot of calculations to step through. The partition funciton $$Z$$ is not constant and needs to be re-calculated as we vary the parameters $$\vec{\theta}={\omega_{ij},b_j,c_i}$$ during training. 
+We obtained the above expressions by substituting the example vector $$\underline{v}_k^{(s)}$$ into the probability expression $$P(\underline{v},\underline{h})=e^{-E(\underline{v},\underline{h})}/Z$$ and summing over all outcomes of $$\underline{h}$$, at the same time noting the partition function $$Z$$ is the exponential term summed over all possible values of $$(\underline{v},\underline{h})\in \Omega$$. Both summations involves a lot of calculations to step through. The partition function $$Z$$ is not constant and needs to be re-calculated as we vary the parameters $$\underline{\theta} = \{ \omega_{ij},b_j,c_i \}$$ during training. 
 
-So we want to tune the parameters $$\vec{\theta} = {\omega_{ij},b_i,c_j}$$ to maximise the log probability of examples appearing from the model. The log probability is maximised when it's derivative with respect to the parameters is zero:
+So we want to tune the parameters $$\underline{\theta} = {\omega_{ij},b_i,c_j}$$ to maximise the log probability of examples appearing from the model. The log probability is maximised when it's derivative with respect to the parameters is zero:
 
-$$\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
-\frac{\partial}{\partial \vec{\theta}} \left[ln\left({\sum_{\vec{h}\in \Omega_h}e^{-E(\vec{v}^{(s)}, \vec{h})}}\right)
-- ln\left({\sum_{\vec{v},\vec{h} \in \Omega}e^{-E(\vec{v}, \vec{h})}}\right)\right]$$
+$$\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+\frac{\partial}{\partial \underline{\theta}} \left[ln\left({\sum_{\underline{h}\in \Omega_h}e^{-E(\underline{v}^{(s)}, \underline{h})}}\right)
+- ln\left({\sum_{\underline{v},\underline{h} \in \Omega}e^{-E(\underline{v}, \underline{h})}}\right)\right]$$
 
-$$=>\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
-\frac{-\sum_{\vec{h} \in \Omega_h} \left[e^{-E(\vec{v}^{(s)},\vec{h})} \frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}}\right] }
-{ \sum_{\vec{h} \in \Omega_h} e^{-E(\vec{v}^{(s)},\vec{h})} } + 
-\frac{\sum_{\vec{h},\vec{v} \in \Omega} \left[e^{-E(\vec{v},\vec{h})} \frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}}\right] }
-{ \sum_{\vec{h},\vec{v} \in \Omega} e^{-E(\vec{v},\vec{h})} }
+$$=>\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+\frac{-\sum_{\underline{h} \in \Omega_h} \left[e^{-E(\underline{v}^{(s)},\underline{h})} \frac{\partial E(\underline{v}^{(s)},\underline{h})}{\partial \underline{\theta}}\right] }
+{ \sum_{\underline{h} \in \Omega_h} e^{-E(\underline{v}^{(s)},\underline{h})} } + 
+\frac{\sum_{\underline{h},\underline{v} \in \Omega} \left[e^{-E(\underline{v},\underline{h})} \frac{\partial E(\underline{v},\underline{h})}{\partial \underline{\theta}}\right] }
+{ \sum_{\underline{h},\underline{v} \in \Omega} e^{-E(\underline{v},\underline{h})} }
 $$
 
 absorbing the total sum in the denominators:
 
-$$\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
--\sum_{\vec{h} \in \Omega_h} \left[\frac{e^{-E(\vec{v}^{(s)},\vec{h})}}{ \sum_{\vec{h} \in \Omega_h} e^{-E(\vec{v}^{(s)},\vec{h})} } 
-\frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}}\right] 
+$$\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+-\sum_{\underline{h} \in \Omega_h} \left[\frac{e^{-E(\underline{v}^{(s)},\underline{h})}}{ \sum_{\underline{h} \in \Omega_h} e^{-E(\underline{v}^{(s)},\underline{h})} } 
+\frac{\partial E(\underline{v}^{(s)},\underline{h})}{\partial \underline{\theta}}\right] 
  + 
-\sum_{\vec{h},\vec{v} \in \Omega} \left[\frac{e^{-E(\vec{v},\vec{h})}} { \sum_{\vec{h},\vec{v} \in \Omega} e^{-E(\vec{v},\vec{h})} }
-\frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}}\right] 
+\sum_{\underline{h},\underline{v} \in \Omega} \left[\frac{e^{-E(\underline{v},\underline{h})}} { \sum_{\underline{h},\underline{v} \in \Omega} e^{-E(\underline{v},\underline{h})} }
+\frac{\partial E(\underline{v},\underline{h})}{\partial \underline{\theta}}\right] 
 $$
 
-It is obvious that the coefficient of $$ \frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}} $$ in the second summation on the RHS is the probability $$P(\vec{v}, \vec{h})$$. 
-The coefficient of $$ \frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}} $$ in the first summation of the RHS can also be thought of as the probability $$P(\vec{h}|\vec{v}^{(s)})$$ (an exponential function of $$\vec{h}$$ and normalised by a summation over all possible $$\vec{h} \in \Omega_h$$.) 
+It is obvious that the coefficient of $$ \partial E(\underline{v},\underline{h})/\partial \underline{\theta} $$ in the second summation on the RHS is the probability $$P(\underline{v}, \underline{h})$$. 
+The coefficient of $$ \partial E(\underline{v}^{(s)},\underline{h}) / \partial \underline{\theta} $$ in the first summation of the RHS can also be thought of as the probability $$P(\underline{h}\vert \underline{v}^{(s)})$$ (an exponential function of $$\underline{h}$$ and normalised by a summation over all possible $$\underline{h} \in \Omega_h$$.) 
 
 Thus the derivative of the log probability can now be written as:
 
-$$\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
--\sum_{\vec{h} \in \Omega_h} \left[P(\vec{h}|\vec{v}^{(s)}) 
-\frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}}\right] 
+>$$\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+-\sum_{\underline{h} \in \Omega_h} \left[P(\underline{h}\vert \underline{v}^{(s)}) 
+\frac{\partial E(\underline{v}^{(s)},\underline{h})}{\partial \underline{\theta}}\right] 
  + 
-\sum_{\vec{h},\vec{v} \in \Omega} \left[P(\vec{v},\vec{h})
-\frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}}\right] 
+\sum_{\underline{h},\underline{v} \in \Omega} \left[P(\underline{v},\underline{h})
+\frac{\partial E(\underline{v},\underline{h})}{\partial \underline{\theta}}\right] 
 $$
 
-the respective summations are across all possible values of the corresponding R.V.s, we recognise these as an expectation operation in the form of  
+the respective summations are across all possible values of the corresponding R.V.s, we recognise these are expectation operations in the form of  
 
 $$ <x> = \sum_{x\in \Omega}xP(x) $$ 
 
 now we have:
 
-$$\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
-\left< \frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}}\right>_{\vec{v},\vec{h} \sim P(\vec{v},\vec{h}|\vec{\theta})}
--\left< \frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}}\right> _{\vec{h} \sim P(\vec{v}=\vec{v}^{(s)},\vec{h}|\vec{\theta})}
+>$$\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+\left< \frac{\partial E(\underline{v},\underline{h})}{\partial \underline{\theta}}\right>_{\underline{v},\underline{h} \sim P(\underline{v},\underline{h}\vert \underline{\theta})}
+-\left< \frac{\partial E(\underline{v}^{(s)},\underline{h})}{\partial \underline{\theta}}\right> _{\underline{h} \sim P(\underline{v}=\underline{v}^{(s)},\underline{h}\vert \underline{\theta})}
 $$  
 
-We simply substitue appropriate samples of $$(\vec{v}, \vec{h})$$ into the expressions of $$\partial E(\vec{v}, \vec{h}) / \partial \vec{theta}$$. the expressions of $$\partial E(\vec{v}, \vec{h}) / \partial \vec{theta}$$ can be analytically derived as we have the energy function as a polynomial of the visible and hidden vectors and the parameters $$\vec{\theta}$$ as coefficients.
+We simply substitute appropriate samples of $$(\underline{v}, \underline{h})$$ into the expressions of $$\partial E(\underline{v}, \underline{h}) / \partial \underline{\theta}$$. the expressions of $$\partial E(\underline{v}, \underline{h}) / \partial \underline{\theta}$$ can be analytically derived as we have the energy function as a polynomial of the visible and hidden vectors and the parameters $$\underline{\theta} = \{ \omega_{ij},b_j,c_i \}$$ as coefficients.
 
-With the probability distribution $$P(\vec{v},\vec{h}\vert \vec{\theta})=e^{-E(\vec{v},\vec{h})}/Z$$ dependent on the parameters $$\vec{\theta}$$. 
+With the probability distribution $$P(\underline{v},\underline{h}\vert \underline{\theta})=e^{-E(\underline{v},\underline{h})}/Z$$ dependent on the parameters $$\underline{\theta}$$. 
 
-To analytically calculate the true mean values one would need to sum (or integrate) over all the entire sample space. Even for the second expression where we're only concerned with all the possibilities of the hidden variable $$\vec{h}$$ this would be very tideous if not impossible to carry out. In practice we can estimate the respective means by drawing samples from the distributions 
-$$P(\vec{v},\vec{h}|\vec{\theta})$$ and $$P(\vec{v}=\vec{v}^{(s)},\vec{h}|\vec{\theta})$$. 
-However, since both probabilities envolve the partition function $$Z$$, which again requires a summation over the entire sample space to compute, we cannot obtain samples from the probability expressions directly. Instead we rely on **Monte-Carlo Simulations** to generate approximate samples for approximating the mean terms. This approximation works in practice as in most cases we do not need the precise gradient to maximise the cost function. A gradient with the correct sign is all we need and in some cases we make adjustmentgs to the magnitude of the gradient to achieve better convergence.
+To analytically calculate the true mean values one would need to sum (or integrate) over the entire sample space. Even for the second expression where we're only concerned with all the possibilities of the hidden variable $$\underline{h}$$ this would be very tedious if not impossible to carry out. In practice we can estimate the respective means by drawing samples from the distributions $$P(\underline{v},\underline{h}\vert \underline{\theta})$$ and $$P(\underline{v}=\underline{v}^{(s)},\underline{h}\vert \underline{\theta})$$. However, since both distributions involve the partition function $$Z$$, which again requires a summation over the entire sample space to compute, we cannot obtain samples from the probability expressions directly. Instead we rely on [Monte-Carlo simulations](https://en.wikipedia.org/wiki/Monte_Carlo_method) to generate approximate samples for approximating the mean terms. This approximation works in practice as in most cases we do not need the precise gradient to maximise the cost function. A gradient with the correct sign is sufficient for us to we make adjustments to the magnitude of the gradient to achieve better convergence.
 
-## so what's so cool about Monte-Carlo? 
-Specifically Markov-Chain Monte-Carlo, is a computational technique for generating samples from a known, but complicated distribution. Let's say this distribution is $$P(\vec{x})$$, $$\vec{x}={x_1, x_2,...,x_n}$$ being out vector of R.V.s. By taking arbitrary initial values of the R.V.s., we write them as $${x_1(0), x_2(0), ..., x_n(0)}$$ and suppose we can draw a sample $$x_1(1)$$ from the distribution $$P(x_1\vert x_2(0), x_3(0),...,x_n(0))$$, the subsequently drawing samples according to the probability $$P(x_j(k)\vert x_1(k-1), x_2(k-1),... \text{other R.V.s. excluding } x_j)$$. If we are able to continue this process of drawing samples from the conditinoal probabilities $$P(x_j,\vert \vec{x}_{\backslash j})$$, then according to the [law of large numbers](https://en.wikipedia.org/wiki/Law_of_large_numbers), eventually the samples drawn $$\vec{x}(k)$$ will resemble samples drawn from $$P(\vec{x})$$ despite all we did was draw samples from the conditional probabilities. This will happen regardless of the initial values $$\vec{x}(0)$$. Recall that generating samples from the RBM probability $$P(\vec{v},\vec{h}) = e^{-E(\vec{v},\vec{h})} / Z$$ directly is problematic because of the complicated partition function $$Z$$ but the conditional probabilities $$P(v_k\vert \vec{v}_{\backslash k}, \vec{h})$$ and $$P(h_k\vert \vec{h}_{\backslash k}, \vec{v})$$ are readily available in simple expressions. We can start with an arbitrary visible R.V. set $$\vec{v}(0)$$ and generate hidden R.V.s according to $$P(h_k\vert \vec{h}_{\backslash k}, \vec{v})$$ the newly generated hidden R.V.s are then used to generate a new set of visible R.V.s according to $$P(v_k\vert \vec{v}_{\backslash k}, \vec{h})$$. This process is repeated and as we go through more iterations, the generated samples will resemble more of the samples generated by the RBM probability $$P(\vec{v}, \vec{h})$$. So despite we cannot evaluate the joing probability $$P(\vec{v}, \vec{h})$$, the process of monte-carlo simulation allows us to draw approximate samples from the RBM. We use these MCMC samples in the gradient equation to approximate the expectation and hence the gradient. We then update the parameters according to the gradient as to maximise the probability of obtaining the training examples with our model. i.e. 
+### Gradient ascent training
+Specifically, [Markov-Chain Monte-Carlo](https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo) (MCMC) is a computational technique for generating samples from a known, but complicated distribution. Let's say this distribution is $$P(\underline{x})$$, with $$\underline{x}={x_1, x_2,...,x_n}$$ being a vector of R.V.s. By taking arbitrary initial values of the R.V.s., we write them as $${x_1(0), x_2(0), ..., x_n(0)}$$ and suppose we can draw a sample $$x_1(1)$$ from the distribution $$P(x_1\vert x_2(0), x_3(0),...,x_n(0))$$, and subsequently draw samples from the probability $$P(x_j(k)\vert x_1(k-1), ...,x_{j-1}(k-1), ,x_{j+1}(k-1),... \text{excluding } x_j)$$. If we are able to continue this process of drawing samples from the conditional probabilities $$P(x_j,\vert \underline{x}_{\backslash j})$$, then according to the [law of large numbers](https://en.wikipedia.org/wiki/Law_of_large_numbers), eventually the samples drawn $$\underline{x}(k)$$ will resemble samples drawn from $$P(\underline{x})$$ despite all we did was drawing samples from the conditional probabilities. This will happen regardless of the initial values $$\underline{x}(0)$$. Recall that generating samples from the RBM probability $$P(\underline{v},\underline{h}) = e^{-E(\underline{v},\underline{h})} / Z$$ directly is problematic because of the complicated partition function $$Z$$ but the conditional probabilities $$P(v_k\vert \underline{v}_{\backslash k}, \underline{h})$$ and $$P(h_k\vert \underline{h}_{\backslash k}, \underline{v})$$ are readily available as simple expressions. We can start with an arbitrary visible R.V. set $$\underline{v}(0)$$ and generate hidden R.V.s according to $$P(h_k\vert \underline{h}_{\backslash k}, \underline{v})$$ the newly generated hidden R.V.s are then used to generate a new set of visible R.V.s according to $$P(v_k\vert \underline{v}_{\backslash k}, \underline{h})$$. This process is repeated and as we go through more iterations, the generated samples will resemble more of the samples generated by the RBM probability $$P(\underline{v}, \underline{h})$$. So despite we cannot evaluate the joint probability $$P(\underline{v}, \underline{h})$$, the process of MCMC simulation allows us to draw approximate samples from the RBM. We use these MCMC samples in the gradient equation to approximate the expectation and hence the gradient. We then update the parameters according to the gradient as to maximise the probability of obtaining the training examples with our model. i.e. 
 
-$$\frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} = 
-\left< \frac{\partial E(\vec{v},\vec{h})}{\partial \vec{\theta}}\right>_{\vec{v},\vec{h} \sim MCMC}
--\left< \frac{\partial E(\vec{v}^{(s)},\vec{h})}{\partial \vec{\theta}}\right> _{\vec{h} \sim MCMC}
+>$$\frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} = 
+\left< \frac{\partial E(\underline{v},\underline{h})}{\partial \underline{\theta}}\right>_{\underline{v},\underline{h} \sim MCMC}
+-\left< \frac{\partial E(\underline{v}^{(s)},\underline{h})}{\partial \underline{\theta}}\right> _{\underline{h} \sim MCMC}
 $$  
 
 and
 
-$$ \vec{\theta}\vert _{new}  = \vec{\theta}\vert _{old}  + \text{[update rate] } \frac{\partial ln(P(\vec{v}^{(s)}|\vec{\theta}))}{\partial \vec{\theta}} $$
+>$$ \underline{\theta}\vert _{new}  = \underline{\theta}\vert _{old}  + \text{[update rate] } \frac{\partial ln(P(\underline{v}^{(s)}\vert \underline{\theta}))}{\partial \underline{\theta}} $$
 
-This is known as __gradient ascent__, modifying the parameters $$\vec{\theta}$$ by a small amount proportional to the gradient at each iteration. Over time the probability of obtraining the training examples with our model will attain a maximum (hence "ascent"). 
+Practically the update rate is a small number (e.g. 0.001). This process of updating the parameters $$\underline{\theta}$$ by a small amount proportional to the gradient at each iteration in order to maximise the probability is known as **gradient ascent**.  
 
-So we know the MCMC process will eventually **converge** if we run enough simulation steps. i.e. the generated samples from the conditional probabilities will resemble samples generated by the joint probability. But how much is "enough"? Theory only guarantees the simulation will converge after a large number of steps but does not allow us to predict the number of simulations required. Thankfully as explained above the exact gradient is not required for the gradient ascent algorithm to work. A gradient estimate by runnning a few MCMC steps will be sufficient to guide the parameter update in the right direction. In the extreme case a single MCMC step can be carried out, exploiting the fact that the gradient involves expectation terms. These are approximated with expectations of the conditional probabilities i.e. simply substitute $$(\vec{v},\vec{h})$$ by $$\left<\vec{v}\right>_{\vec{v} \sim P(\vec{v}\vert \vec{h})}$$ and $$\left<\vec{h}\right>_{\vec{h} \sim P(\vec{h}\vert \vec{v})}$$. For binary R.V.s the conditional probabilities are Bernoulli probabilitie with the expected value equal to the probability of drawing a $$1$$. These are given by the sigmoid functions described above in $$P(h_k=1\vert \vec{h}_{\backslash k},\vec{v})$$ and $$P(v_k=1\vert \vec{v}_{\backslash k},\vec{h})$$ 
+So we know the MCMC process will eventually 'converge' if we run enough simulation steps. i.e. the generated samples from the conditional probabilities will resemble samples generated by the joint probability. But how many simulations is enough? Theory only guarantees the simulation will converge after a large number of steps but does not allow us to predict the number of simulations required. Thankfully, the exact gradient is not required for the gradient ascent algorithm to work. A gradient estimate by running a few MCMC steps will be sufficient to guide the parameter update in the right direction. In our experiments, a running average of estimated gradients over consecutive sets of training examples seems to work better than using the gradient estimate directly. In the extreme case a single MCMC step can be carried out, exploiting the fact that the gradient involves expectation terms. These are approximated with expectations of the conditional probabilities i.e. simply substitute $$(\underline{v},\underline{h})$$ by $$\left<\underline{v}\right>_{\underline{v} \sim P(\underline{v}\vert \underline{h})}$$ and $$\left<\underline{h}\right>_{\underline{h} \sim P(\underline{h}\vert \underline{v})}$$. For binary R.V.s the conditional probabilities are Bernoulli probabilities with the expected value equal to the probability of drawing a $$1$$. These are given by the sigmoid functions described above in $$P(h_k=1\vert \underline{h}_{\backslash k},\underline{v})$$ and $$P(v_k=1\vert \underline{v}_{\backslash k},\underline{h})$$ 
 
-The trick of using the analytically calculated mean values without carrying out sampling are known as __mean field updates__. Whereas the process of estimating the gradient with a single MCMC step is known as __contrastive divergence__. This was one of the main break throughs that allowed training RBMs with a practically usable size possible.  
+The trick of using the analytically calculated mean values without carrying out sampling are known as **mean field updates**. Whereas the process of estimating the gradient with truncated MCMC steps is known as **contrastive divergence**. This was one of the main breakthroughs that allowed training RBMs of usable size possible.  
 
 
-## modeling real valued R.V.s
+### Modeling joint probability of real valued R.V.s
 
-The restricted boltzmann machine can model any joint distribution of binary R.V.s. The size of the RBM required to model an arbitrary binary distribution depends on the distribution itself as well as the number of R.V.s are requried to be modeled. Indeed, the probability maximisation derived above is for a general energy function $$E(\vec{v},\vec{h})$$. The R.V.s $$\vec{v}$$ and $$\vec{h}$$ can be binary or real. For binary R.V.s we can use the conditional probabilities derived above in the MCMC process to estimate the gradient updates. For real visible R.V.s. with binary hidden R.V.s we can use the energy function:
+The Restricted Boltzmann Machine can model any joint distribution of binary R.V.s. The size of the RBM required to model an arbitrary binary distribution depends on the distribution itself as well as the number of R.V.s in the example data set. Indeed, the probability maximisation derived above (maximum-likelihood) is for a general energy function $$E(\underline{v},\underline{h})$$. The R.V.s $$\underline{v}$$ and $$\underline{h}$$ can be binary or real. For binary R.V.s we can use the conditional probabilities derived above in the MCMC process to estimate the gradient updates. For real visible R.V.s. with binary hidden R.V.s we can use the energy function:
 
-$$ E(\vec{v},\vec{h}) = \sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} - \sum_i \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} - \sum_j b_j h_j$$
+>$$ E(\underline{v},\underline{h}) = \sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} - \sum_i \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} - \sum_j b_j h_j$$
 
-just like the binary RBM, we derive the probability 
+just like the binary RBM, we derive the probability $$P(v_k\vert \underline{v}_{\backslash k}, \underline{h})$$ independent of the partition function $$Z$$ as:
 
-$$P(v_k|\vec{v}_{\backslash k}, \vec{h})$$ 
+$$ P(v_k\vert \underline{v}_{\backslash k}, \underline{h}) = \frac{P(v_k,\underline{v}_{\backslash k}, \underline{h})}{P(\underline{v}_{\backslash k}, \underline{h})} = \frac{P(\underline{v}, \underline{h})}{\int{P(\underline{v},\underline{h})}dv_k}$$
 
-independent of the partition function $$Z$$ by Bayes' rule:
+writing this in terms of the energy function and using [results](https://en.wikipedia.org/wiki/List_of_integrals_of_exponential_functions) of standard integrals:
 
-$$ P(v_k|\vec{v}_{\backslash k}, \vec{h}) = \frac{P(v_k,\vec{v}_{\backslash k}, \vec{h})}{P(\vec{v}_{\backslash k}, \vec{h})} = \frac{P(\vec{v}, \vec{h})}{\int{P(\vec{v},\vec{h})}dv_k}$$
+$$ => P(v_k\vert \underline{v}_{\backslash k}, \underline{h}) = \frac{e^{-\sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_i \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_j b_j h_j}}{e^{-\sum_{i\neq k} \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_{i\neq k} \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_j b_j h_j} \dot \displaystyle \displaystyle \int{e^{  -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j \omega_{kj}h_j\frac{v_k}{\sigma_k^2} + \sum_j b_j h_j }}dv_k}$$
 
-writing this in the energy function:
+$$ => P(v_k\vert \underline{v}_{\backslash k}, \underline{h}) = \frac{e^{ -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j\frac{\omega_{kj}h_jv_k}{\sigma_k^2} }}{ \displaystyle \int{e^{  -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j \omega_{kj}h_j\frac{v_k}{\sigma_k^2} + \sum_j b_j h_j }}dv_k } = \frac{1}{\sqrt{2\pi \sigma_k^2}} e^{ -\frac{[v_k-(a_k+\sum_j \omega_{kj}h_j)]^2}{2\sigma_k^2} }$$
 
-$$ => P(v_k|\vec{v}_{\backslash k}, \vec{h}) = \frac{e^{-\sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_i \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_j b_j h_j}}{e^{-\sum_{i\neq k} \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_{i\neq k} \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_j b_j h_j} \dot \displaystyle \displaystyle \int{e^{  -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j \omega_{kj}h_j\frac{v_k}{\sigma_k^2} + \sum_j b_j h_j }}dv_k}$$
+this is a Gaussian distribution and we write:
 
-$$ => P(v_k|\vec{v}_{\backslash k}, \vec{h}) = \frac{e^{ -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j\frac{\omega_{kj}h_jv_k}{\sigma_k^2} }}{ \displaystyle \int{e^{  -\frac{(v_k-a_k)^2}{2\sigma_k^2} + \sum_j \omega_{kj}h_j\frac{v_k}{\sigma_k^2} + \sum_j b_j h_j }}dv_k } = \frac{1}{\sqrt{2\pi \sigma_k^2}} e^{ -\frac{[v_k-(a_k+\sum_j \omega_{kj}h_j)]^2}{2\sigma_k^2} }$$
-
-this is a gaussian distribution and we write:
-
->$$P(v_k|\vec{v}_{\backslash k}, \vec{h}) =
+>$$P(v_k\vert \underline{v}_{\backslash k}, \underline{h}) =
 \mathcal{N}(\mu=a_k+\sum_j\omega_{kj}h_j, \sigma=\sigma_k)$$
 
 For the probability of a hidden R.V. depending on the visible R.V.s, we have:
 
-$$ P(h_k |\vec{h}_{\backslash k}, \vec{v}) = \frac{P(h_k,\vec{h}_{\backslash k}, \vec{v})}{P(\vec{h}_{\backslash k}, \vec{v})} = \frac{P(\vec{h}, \vec{v})}{P(h_k=1,\vec{h}_{\backslash k}, \vec{v}) + P(h_k=0,\vec{h}_{\backslash k}, \vec{v})}$$
+$$ P(h_k \vert \underline{h}_{\backslash k}, \underline{v}) = \frac{P(h_k,\underline{h}_{\backslash k}, \underline{v})}{P(\underline{h}_{\backslash k}, \underline{v})} = \frac{P(\underline{h}, \underline{v})}{P(h_k=1,\underline{h}_{\backslash k}, \underline{v}) + P(h_k=0,\underline{h}_{\backslash k}, \underline{v})}$$
 
-and this evaluates to:
+substituting in the energy function and evaluating the total probability of the hidden random variable:
 
-$$ P(h_k |\vec{h}_{\backslash k}, \vec{v}) =
+$$ P(h_k \vert \underline{h}_{\backslash k}, \underline{v}) =
 \frac{e^{-\sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_i \sum_j \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_j b_j h_j}}  
 {e^{-\sum_i \frac{(v_i-a_i)^2}{2\sigma_i^2} + \sum_i \sum_{j\neq k} \omega_{ij}h_j\frac{v_i}{\sigma_i^2} + \sum_{j\neq k} b_j h_j} 
  \left[e^{\sum_i\frac{\omega_{ik}(h_k=0)v_i}{\sigma_i^2} + b_k(h_k=0)} + e^{\sum_i\frac{\omega_{ik}(h_k=1)v_i}{\sigma_i^2} + b_k(h_k=1)} \right]} $$
 
 which simplifies to:
 
-$$ P(h_k |\vec{h}_{\backslash k}, \vec{v}) =
+$$ P(h_k \vert \underline{h}_{\backslash k}, \underline{v}) =
  \frac{e^{\sum_i\frac{\omega_{ik}(h_k)v_i}{\sigma_i^2} + b_k(h_k)}}{ e^{\sum_i\frac{\omega_{ik}v_i}{\sigma_i^2} + b_k} + 1} $$
 
-To evaluate the probability of $$h_k = 1$$ we subtitute unity in $$h_k$$ on the RHS:
+To evaluate the probability of $$h_k = 1$$ we set $$h_k=1$$ in the numerator on the RHS:
 
->$$ P(h_k = 1|\vec{h}_{\backslash k}, \vec{v}) =
+>$$ P(h_k = 1\vert \underline{h}_{\backslash k}, \underline{v}) =
 \frac{e^{\sum_i\frac{\omega_{ik}(h_k=1)v_i}{\sigma_i^2} + b_k(h_k)}}{ e^{\sum_i\frac{\omega_{ik}v_i}{\sigma_i^2} + b_k} + 1} 
 =sig\left(\sum_i \omega_{ik}\frac{v_i}{\sigma_i^2} + b_k\right)$$
 
+We now have the conditional probabilities to approximate samples from $$P(\underline{v}, \underline{h})$$ to estimate the means for the gradient updates.
 
 
 
+### From math to code: practical aspects
+
+RBMs with real visible units are known to be problematic to train. I have attempted an implementation with the Python/Theano (0.7) framework, which allows fast execution on a GPU. The [script](github link) is written from scratch and a few tricks were experimented with training the RBM. The aim of the experiment was to learn pixel statistics from a face image data set ([MIT CBCL](http://cbcl.mit.edu/cbcl/software-datasets/FaceData2.html)).
+To speed up execution, Amazon EC2 GPU instances with the [ipython notebook](http://ipython.org/notebook.html) environment were used for development. (I used [cuda 7.0](http://markus.com/install-theano-on-aw), cuda 7.5 is also available at time of writing.) The simulated RBM consists of 361 (19x19) real visible units and 256 hidden binary units. Simulating the the fully connected RBM with 361 units on a GPU helped a lot in shortening the implementation time, particularly when a number of simulations were carried out to find good learning rates and initialisation parameters. The Theano 0.7 library supports GPU with 32bit floating point numbers. The trick is to ensure all data were defined as float32. For float64 data Theano 0.7 defaults to using the CPU. 
+
+All 2400 images in the training set were used for training. All pixel data were normalised to the range $$[0,1]$$. 50 images per **mini-batch** were fed to the network at a time for each gradient update. i.e. each gradient updates were computed with the average gradient over respective approximated gradients from each example in the mini-batch.
+
+The network was trained for 2500 epochs. 15 iterations of the Monte Carlo chain were used for each traing example. Update rates for parameters $$a_i$$ and $$b_j$$ were set to 0.001 whereas update rates for parameters $$\omega_{ij}$$ and $$z_i$$ in $$ e^{z_i} = \sigma_i^2 $$ were both set to 0.00005. Each mini-batch took less than 10 seconds to train on an EC2 instance with a GRID 520 card. 
+
+The activity of the hidden units are also **"sparcified"** by including an extra term in the cost function to penalise the difference between a target average firing rate $$p_t$$ and the actual mean firing rate $$\left<p_{\underline{h}}\right>$$ computed from the training examples:
+
+>$$ -p_t log\left<p_{\underline{h}}\right> - (1-p_t)log(1-\left<p_{\underline{h}}\right>) $$
+
+where the mean activation can be calculated from all examples in a mini-batch:
+
+>$$
+\left<p_{\underline{h}}\right> = \left< sig\left(\sum_i \omega_{ik}\frac{v_i}{\sigma_i^2} + b_k\right) \right> _{\underline{v}_{e.g.}}
+$$
+
+A running gradient average **RMSprop** was used to smooth out the gradient updates during simulation. I found this smoothing was necessary for the training to work without other "momentum" methods. The combination of mini-batch/RMSprop also drastically improved the convergence rate and the network converges to a local minimum with a lot less iterations compared to vanilla gradient ascent. 
+ 
+During the simulation, the "reconstruction error" was used as a benchmark for convergence progress. The reconstruction error essentially calculates the difference between the initial samples (which are the example images) of the MC chain and the result generated by the network after a few MC samples. The reconstruction error **does not** measure the probability cost directly but large reconstruction errors indicates the network model is significantly different than the training data distribution. (For Binary visible units, Annealed Importance Sampling estimation can be derived and used to estimate the probability cost function directly.) 
+
+The parameters $$a_i$$ can be thought of as the "mean" of the model whereas the parameters $$\sigma_i$$ can be thought of the deviation from the mean when the RBM is used as a generative model. For image data experiments, we can visualise the parameters $$a_i$$ and $$\sigma_i$$ and they should resemble the average of the training dataset. Typical parameters $$\underline{a} = \{ a_0, a_1, ... \}$$ and $$\underline{\sigma} = \{ \sigma_0, \sigma_1, ... \}$$ after 2500 epochs are shown below:
+
+![GRBMparameters](/images/GRBMparameters.png){:.some-css-class width="300" align="middle"}
+
+The generated images have less variety compared to the original data set. This might be due to the fact that we have a fully connected network. A multilayer [deep](https://en.wikipedia.org/wiki/Deep_belief_network) network with localised connections for each hidden unit should work better in picking out the subtle features from the images in the training set. These samples are generated after 2500 epochs of training. Further training the network results in the generation of more homogeneous faces.  
+
+![GRBMgenerated](/images/GRBMgenerated.png){:.some-css-class width="600"}
 
 
+The parameters $$\boldsymbol{\omega}=\{ \omega_{1,1}, \omega_{1,2},... \}$$ resembles [receptive fields](https://en.wikipedia.org/wiki/Receptive_field) in the sense that these are the preferred inputs to activate the hidden units. A few typical plots of $$\omega_{ij}$$ for fixed $$i^{th}$$ hidden unit and $$j=\{0,1,...\}$$ are shown below:
 
-## from maths to code: practical aspects
-RBMs with real visible units are notoriously hard to train. I have attempted am implementation with the python/theano framework. As a learning exercise, I have written the script from scratch and experimented with a few tricks to make the cost function converge. The code is fairly heavy to run with the image data sets and I've put them on amazon EC2 GPU instances with the [ipython notebook](http://ipython.org/notebook.html) environment. (I used [cuda 7.0](http://markus.com/install-theano-on-aw), as cuda 7.5 didn't work at the time.)  
-
-Things that made it work (following various gurus in the subject)
+![GRBMegRF](/images/GRBMegRF.png){:.some-css-class width="500"}
 
 
+### How to use the code
+
+A brief guide to methods and parameter settings can be found with the source's [README.md](github link)
 
 
+### References
 
-## references
-Coming from academia I understand the importance of citations...not that it matters much to the source in this case but at least some further reading for the interested:
+For RBM with real visible variables: 
 
-Hinton papers and RMSprop video
-Cho's paper
+- ["Modeling human motion using binary latent variables"](http://www.cs.toronto.edu/~hinton/absps/nipsmocap.pdf) by Taylor and colleagues.  
+
+- ["Improved learning of Gaussian-Bernoulli Restricted Boltzmann Machines"](http://users.ics.aalto.fi/praiko/papers/icann11.pdf) by Cho and colleagues.  
+
+Training tricks:
+
+- I picked up RMSprop from Geoffrey Hinton's [video lecture](https://www.youtube.com/watch?v=defQQqkXEfE&list=PLoRl3Ht4JOcdU872GhiYWf6jwrk_SNhz9&index=29), also mini-batch training and Rprop.  
+
+- ["A practical guide to training Restricted Boltzmann Machines"](http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf) by Geoffrey Hinton provided lots of tips for training RBMs, including the sparcification of the hidden units I've used here.  
+
+
 
 
 
