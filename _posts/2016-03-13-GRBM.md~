@@ -231,7 +231,7 @@ We now have the conditional probabilities to approximate samples from $$P(\under
 
 ### From math to code: practical aspects
 
-RBMs with real visible units are known to be problematic to train. I have attempted an implementation with the Python/Theano (0.7) framework, which allows fast execution on a GPU. The [script](github link) is written from scratch and a few tricks were experimented with training the RBM. The aim of the experiment was to learn pixel statistics from a face image data set ([MIT CBCL](http://cbcl.mit.edu/cbcl/software-datasets/FaceData2.html)).
+RBMs with real visible units are known to be problematic to train. I have attempted an implementation with the Python/Theano (0.7) framework, which allows fast execution on a GPU. The [script](https://github.com/freerangehen/GRBM) is written from scratch and a few tricks were experimented with training the RBM. The aim of the experiment was to learn pixel statistics from a face image data set ([MIT CBCL](http://cbcl.mit.edu/cbcl/software-datasets/FaceData2.html)).
 To speed up execution, Amazon EC2 GPU instances with the [ipython notebook](http://ipython.org/notebook.html) environment were used for development. (I used [cuda 7.0](http://markus.com/install-theano-on-aw), cuda 7.5 is also available at time of writing.) The simulated RBM consists of 361 (19x19) real visible units and 256 hidden binary units. Simulating the the fully connected RBM with 361 units on a GPU helped a lot in shortening the implementation time, particularly when a number of simulations were carried out to find good learning rates and initialisation parameters. The Theano 0.7 library supports GPU with 32bit floating point numbers. The trick is to ensure all data were defined as float32. For float64 data Theano 0.7 defaults to using the CPU. 
 
 All 2400 images in the training set were used for training. All pixel data were normalised to the range $$[0,1]$$. 50 images per **mini-batch** were fed to the network at a time for each gradient update. i.e. each gradient updates were computed with the average gradient over respective approximated gradients from each example in the mini-batch.
@@ -268,7 +268,7 @@ The parameters $$\boldsymbol{\omega}=\{ \omega_{1,1}, \omega_{1,2},... \}$$ rese
 
 ### How to use the code
 
-A brief guide to methods and parameter settings can be found with the source's [README.md](github link)
+A brief guide to methods and parameter settings can be found with the source's [README.md](https://github.com/freerangehen/GRBM)
 
 
 ### References
